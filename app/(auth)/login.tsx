@@ -71,7 +71,7 @@ export default function Login() {
               style={{
                 textAlign: 'right',
                 marginTop: 5,
-                color: 'blue',
+                color: '3fe2238',
                 textDecorationLine: 'underline',
               }}
             >
@@ -86,7 +86,7 @@ export default function Login() {
               
             }}
           >
-          <Button size="lg" variant="solid" className="bg-blue-500" onPress={() => console.log('Login')}>
+          <Button size="lg" variant="solid" style={{ backgroundColor: "#fe2238", }} onPress={() => console.log('Login')}>
             <ButtonText>Login</ButtonText>
           </Button>
           </View>
@@ -95,7 +95,7 @@ export default function Login() {
             style={{
               textAlign: 'center',
               marginTop: 10,
-              color: 'blue',
+              color: '3fe2238',
               textDecorationLine: 'underline',
             }}
           >
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    color: 'blue',
+    color: '#fe2238',
     fontSize: 28,
     textAlign: 'center',
     marginTop: 10,

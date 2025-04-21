@@ -124,7 +124,7 @@ export default function Register() {
               marginTop: 10,
             }}
           >
-            <Button size="lg" variant="solid" className="bg-blue-500" onPress={() => console.log('Register')}>
+            <Button size="lg" variant="solid" style={{ backgroundColor: '#fe2238' }} onPress={() => console.log('Register')}>
               <ButtonText>Register</ButtonText>
             </Button>
           </View>
@@ -133,7 +133,7 @@ export default function Register() {
             style={{
               textAlign: 'center',
               marginTop: 10,
-              color: 'blue',
+              color: '#fe2238',
               textDecorationLine: 'underline',
             }}
           >
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    color: 'blue',
+    color: '#fe2238',
     fontSize: 28,
     textAlign: 'center',
     marginTop: 10,
