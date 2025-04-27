@@ -1,21 +1,47 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Avatar, AvatarFallbackText, AvatarImage } from './ui/avatar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from './firebase';
 
 export default function CustomHeader({ title }: { title: string }) {
   const router = useRouter();
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
 
   const handleProfileClick = () => {
     console.log('Profile clicked');
     // Navigate to Profile
   };
 
-  const handleLogoutClick = () => {
+  const handleLogoutClick = async () => {
     console.log('Logout clicked');
-    // Handle logout
+    await AsyncStorage.removeItem('userEmail');
+    router.replace('/(auth)/login');
+    // const email = await AsyncStorage.getItem('userEmail');
+    // console.log("🚀 ~ checkEmail ~ email:", email)
   };
+
+  const getEmail = async () => {
+    const email = await AsyncStorage.getItem('userEmail');
+    if (email) {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+        console.log('User Data:', userData);
+        setUserDetails(userData); // save for showing on UI
+      }
+    }
+  };
+
+  useEffect(() => {
+    getEmail()
+  }, [])
 
   return (
     <View style={styles.header}>
@@ -26,7 +52,7 @@ export default function CustomHeader({ title }: { title: string }) {
         style={styles.avatarContainer}
       >
         <Avatar size="md" style={styles.avatar}>
-          <AvatarFallbackText>Jane Deo</AvatarFallbackText>
+          <AvatarFallbackText>{userDetails?.firstName}</AvatarFallbackText>
           <AvatarImage
             source={{
               uri: 'https://images.unsplash.com/photo-1502685104226-e9df14d4d9f2?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',

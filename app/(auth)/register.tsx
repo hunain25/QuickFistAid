@@ -6,9 +6,14 @@ import { FormControl, FormControlLabel, FormControlLabelText } from '@/component
 import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input'
 import { EyeIcon, EyeOffIcon } from '@/components/ui/icon'
 import { Button, ButtonText } from "@/components/ui/button"
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router';
+import { auth, db } from '@/components/firebase.js';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { collection, doc, setDoc } from 'firebase/firestore'
 
 export default function Register() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false)
   const [firstName, setFirstName] = React.useState('')
   const [lastName, setLastName] = React.useState('')
@@ -20,6 +25,58 @@ export default function Register() {
   const handleState = () => {
     setShowPassword((showState) => !showState)
   }
+
+  const handleRegister = async () => {
+    try {
+      if (!email || !password || !firstName || !lastName) {
+        alert('Please fill all required fields');
+        return;
+      }
+  
+      if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+  
+      console.log(email, password, firstName, lastName, phoneNumber);
+  
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      console.log("User", user);
+
+      console.log("db", db); // Check if this is a valid Firestore instance
+  
+      // Explicitly create a collection reference and a document reference
+      // const usersCollection = collection(db, 'users'); // Reference to the 'users' collection
+      // const userDoc = doc(usersCollection, user.uid); // Reference to the user's document using their UID
+  
+      // // Set document data
+      // await setDoc(userDoc, {
+      //   email: user.email,
+      //   firstName: firstName || 'No first name', // Use the form field value directly
+      //   lastName: lastName || 'No last name', // Use the form field value directly
+      //   phoneNumber: phoneNumber || 'No Phone Number', // Use the form field value directly
+      //   createdAt: new Date()
+      // });
+
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        email: user.email,
+        firstName: firstName || 'No first name',
+        lastName: lastName || 'No last name',
+        phoneNumber: phoneNumber || 'No Phone Number',
+        createdAt: new Date().toISOString()
+      });
+  
+      console.log('User saved to Firestore');
+      await AsyncStorage.setItem('userEmail', email);
+  
+      router.replace('/');
+    } catch (error: any) {
+      console.log('Registration Error: ', error.message);
+      alert(error.message);
+    }
+  };
 
   return (
     <Grid
@@ -124,7 +181,7 @@ export default function Register() {
               marginTop: 10,
             }}
           >
-            <Button size="lg" variant="solid" style={{ backgroundColor: '#fe2238' }} onPress={() => console.log('Register')}>
+            <Button size="lg" variant="solid" style={{ backgroundColor: '#fe2238' }} onPress={handleRegister}>
               <ButtonText>Register</ButtonText>
             </Button>
           </View>

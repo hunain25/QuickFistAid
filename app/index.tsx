@@ -1,12 +1,31 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Grid, GridItem } from "@/components/ui/grid";
 import { Image } from "@/components/ui/image";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Linking, ScrollView, StyleSheet, Text, } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Index() {
+
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkEmail = async () => {
+      try {
+        const email = await AsyncStorage.getItem('userEmail');
+        console.log("🚀 ~ checkEmail ~ email:", email)
+        if (email == null) {
+          router.replace("/(auth)/login"); // Login page pe redirect
+        }
+      } catch (error) {
+        console.error("Error checking email:", error);
+      }
+    };
+
+    checkEmail();
+  }, []);
 
   const handleCall = async () => {
     const phoneNumber = '1122';
@@ -69,9 +88,9 @@ export default function Index() {
               Quickly locate hospitals, clinics, and pharmacies near your location.
             </Text>
             <Link href={"/map"} asChild>
-            <Button size="lg" variant="solid" style={{ backgroundColor: "#fe2238", marginTop: 20 }}>
-              <ButtonText>Find on Map</ButtonText>
-            </Button>
+              <Button size="lg" variant="solid" style={{ backgroundColor: "#fe2238", marginTop: 20 }}>
+                <ButtonText>Find on Map</ButtonText>
+              </Button>
             </Link>
           </Card>
         </GridItem>
