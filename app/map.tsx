@@ -3,6 +3,7 @@ import { View, StyleSheet, Alert, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import axios from 'axios';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function Map() {
   const [location, setLocation] = useState<{
@@ -36,7 +37,7 @@ export default function Map() {
     })();
   }, []);
 
-  const fetchNearbyPlaces = async (lat:any, lng:any) => {
+  const fetchNearbyPlaces = async (lat: any, lng: any) => {
     try {
       // Overpass API query to find hospitals and clinics within ~5km
       const overpassQuery = `
@@ -47,18 +48,18 @@ export default function Map() {
         );
         out body;
       `;
-  
+
       const response = await axios.post('https://overpass-api.de/api/interpreter', overpassQuery, {
         headers: { 'Content-Type': 'text/plain' },
       });
-  
-      const places = response.data.elements.map((element:any) => ({
+
+      const places = response.data.elements.map((element: any) => ({
         lat: element.lat,
         lng: element.lon,
         name: element.tags.name || 'Unnamed Hospital/Clinic',
         vicinity: element.tags['addr:street'] || 'Unknown address',
       }));
-  
+
       setNearbyPlaces(places);
     } catch (error) {
       console.error('Error fetching nearby places:', error);
@@ -89,7 +90,9 @@ export default function Map() {
           ))}
         </MapView>
       ) : (
-        <Text>Loading map...</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Spinner size="large" color={'#fe2238'} />
+        </View>
       )}
     </View>
   )
