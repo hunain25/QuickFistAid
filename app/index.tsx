@@ -106,6 +106,7 @@ export default function Index() {
               </ModalCloseButton>
             </ModalHeader>
             <ModalBody>
+            <Link href="/chat" onPress={() => setShowModal(false)} asChild>
             <Button
               size="lg"
               variant="solid"
@@ -113,6 +114,8 @@ export default function Index() {
             >
               <ButtonText>Chat with AI</ButtonText>
             </Button>
+            </Link>
+            <Link href="/voice" onPress={() => setShowModal(false)} asChild>
             <Button
               size="lg"
               variant="solid"
@@ -120,6 +123,7 @@ export default function Index() {
             >
               <ButtonText>Talk to AI</ButtonText>
             </Button>
+            </Link>
             </ModalBody>
           </ModalContent>
         </Modal>

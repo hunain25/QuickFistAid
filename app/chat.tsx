@@ -18,6 +18,9 @@ import {
   Keyboard,
 } from "react-native";
 import axios from "axios";
+import { Avatar } from "@/components/ui/avatar";
+import { ArrowLeftIcon, Icon } from "@/components/ui/icon";
+import { Link } from "expo-router";
 
 const GEMINI_API_KEY = "AIzaSyCyq5_2H4g92yvOjFDhbyOsk9asqJKsjNE";
 
@@ -250,6 +253,11 @@ export default function Chat() {
           source={{ uri: "https://via.placeholder.com/40" }}
           style={styles.aiAvatar}
         /> */}
+        {/* <Link href="/" >
+          <Avatar style={styles.aiAvatar}>
+            <Icon as={ArrowLeftIcon} size="lg" className="stroke-white" />
+          </Avatar>
+        </Link> */}
         <View>
           <Text style={styles.aiName}>QuickFistAid AI</Text>
           <Text style={styles.aiStatus}>Online</Text>
@@ -375,6 +383,7 @@ const styles = StyleSheet.create({
   //   height: 40,
   //   borderRadius: 20,
   //   marginRight: 10,
+  //   backgroundColor: "#fe2238"
   // },
   aiName: {
     fontWeight: "bold",
