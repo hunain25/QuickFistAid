@@ -15,6 +15,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@alan-ai/alan-sdk-react-native": "^2.9.0",
     "@expo/vector-icons": "^14.0.2",
     "@gluestack-ui/avatar": "^0.1.18",
     "@gluestack-ui/button": "^1.0.14",
@@ -22,10 +23,12 @@
     "@gluestack-ui/icon": "^0.1.27",
     "@gluestack-ui/image": "^0.1.17",
     "@gluestack-ui/input": "^0.1.38",
+    "@gluestack-ui/modal": "^0.1.41",
     "@gluestack-ui/nativewind-utils": "^1.0.26",
     "@gluestack-ui/overlay": "^0.1.22",
     "@gluestack-ui/spinner": "^0.1.15",
     "@gluestack-ui/toast": "^1.0.9",
+    "@legendapp/motion": "^2.4.0",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
