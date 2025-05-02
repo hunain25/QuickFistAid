@@ -1,63 +1,140 @@
-import React from 'react';
-import { View, Text, Button, ActivityIndicator, StyleSheet } from 'react-native';
+// VoiceChatScreen.js
+
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import Voice from '@react-native-voice/voice';
 import * as Speech from 'expo-speech';
 
-export default function VoiceComponent() {
-  const [listening, setListening] = React.useState(false);
-  const [userText, setUserText] = React.useState('');
-  const [aiText, setAiText] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
+export default function VoiceChatScreen() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [userText, setUserText] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const startListening = async () => {
-    setUserText('');
-    setAiText('');
-    setListening(true);
-    Voice.onSpeechResults = (event) => {
-      const text = event.value?.[0] ?? '';
-      setUserText(text);
-      getAIResponse(text);
+  useEffect(() => {
+    Voice.onSpeechResults = onSpeechResultsHandler;
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
     };
-    await Voice.start('en-US');
+  }, []);
+
+  const onSpeechResultsHandler = (event: { value?: string[] }) => {
+      if (event.value && event.value.length > 0) {
+          const text = event.value[0];
+          setUserText(text);
+          getAIResponse(text);
+      } else {
+          console.error('No speech results received.');
+      }
   };
 
-  const getAIResponse = async (text: string) => {
+  const startRecording = async () => {
+    try {
+      setIsRecording(true);
+      await Voice.start('en-US');
+    } catch (error) {
+      console.error('Voice Start Error:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      await Voice.stop();
+      setIsRecording(false);
+    } catch (error) {
+      console.error('Voice Stop Error:', error);
+    }
+  };
+
+  const getAIResponse = async (message: any) => {
     setLoading(true);
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBK0Gqm_D1ZVjcqWVRKQ8Hken4mJ4rCunA', {
+      const response = await fetch('https://api.pawan.krd/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': 'Bearer YOUR_API_KEY',
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text }] }],
+          model: 'pai-001',
+          messages: [{ role: 'user', content: message }],
         }),
       });
 
       const data = await response.json();
-      const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I did not understand.';
-      setAiText(aiReply);
-      Speech.speak(aiReply);
+      const reply = data.choices[0].message.content;
+      setAiResponse(reply);
+      Speech.speak(reply);
     } catch (error) {
-      console.error(error);
-      setAiText('Error in getting response.');
+      console.error('AI API Error:', error);
+      setAiResponse('Sorry, something went wrong.');
     }
     setLoading(false);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Voice AI Medical Assistant</Text>
-      <Button title={listening ? "Listening..." : "Start Talking"} onPress={startListening} disabled={listening} />
-      {loading && <ActivityIndicator size="large" />}
-      <Text style={styles.label}>You Said:</Text>
-      <Text>{userText}</Text>
-      <Text style={styles.label}>AI Reply:</Text>
-      <Text>{aiText}</Text>
+      <Text style={styles.heading}>🎙️ AI Voice Assistant</Text>
+
+      <View style={styles.chatBox}>
+        <Text style={styles.label}>You:</Text>
+        <Text style={styles.text}>{userText || 'Press the mic and start speaking...'}</Text>
+
+        <Text style={styles.label}>AI:</Text>
+        {loading ? (
+          <ActivityIndicator size="small" color="#555" />
+        ) : (
+          <Text style={styles.text}>{aiResponse}</Text>
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={[styles.micButton, isRecording && { backgroundColor: '#ff4d4d' }]}
+        onPress={isRecording ? stopRecording : startRecording}
+      >
+        <Text style={styles.micText}>{isRecording ? 'Stop' : 'Start Talking'}</Text>
+      </TouchableOpacity>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, marginTop: 50 },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  label: { fontWeight: 'bold', marginTop: 20 },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    alignSelf: 'center',
+    marginBottom: 30,
+  },
+  chatBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 40,
+    backgroundColor: '#f9f9f9',
+  },
+  label: {
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  text: {
+    fontSize: 16,
+  },
+  micButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 15,
+    borderRadius: 50,
+    alignItems: 'center',
+  },
+  micText: {
+    color: '#fff',
+    fontSize: 18,
+  },
 });

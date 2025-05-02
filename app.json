@@ -13,10 +13,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/quick-guid.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "hunain25.QuickFistAid"
+      "package": "hunain25.QuickFistAid",
+      "permissions": ["RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",
