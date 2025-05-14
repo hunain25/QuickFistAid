@@ -18,19 +18,105 @@ import {
   Keyboard,
 } from "react-native";
 import axios from "axios";
+import * as Speech from 'expo-speech';
+import Voice from '@react-native-voice/voice';
+// import { Ionicons } from '@expo/vector-icons';
 
 // آپ کی Gemini API کلید
 const GEMINI_API_KEY = "AIzaSyCyq5_2H4g92yvOjFDhbyOsk9asqJKsjNE";
+
+// طبی موضوعات کی لسٹ
+const MEDICAL_TOPICS = [
+  "emergency", "first aid", "cpr", "injury", "wound", "bleeding", "choking", 
+  "burn", "fracture", "sprain", "poisoning", "heart attack", "stroke", "seizure", 
+  "allergic reaction", "unconscious", "breathing", "pulse", "bandage", "medicine",
+  "pain", "fever", "blood pressure", "diabetes", "asthma", "dressing", "symptom",
+  "treatment", "hospital", "ambulance", "doctor", "nurse", "patient", "health",
+  "medical", "disease", "condition", "injury", "diagnosis", "cure", "therapy",
+  "recovery", "emergency room", "911", "cardio", "cardiac", "respiratory"
+];
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const flatListRef = useRef(null);
 
   const keyboardHeight = useRef(new Animated.Value(0)).current;
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  // وائس ریکارڈنگ سیٹ اپ
+  useEffect(() => {
+    function onSpeechStart() {
+      setIsRecording(true);
+    }
+    
+    function onSpeechEnd() {
+      setIsRecording(false);
+    }
+    
+    function onSpeechResults(e) {
+      if (e.value && e.value.length > 0) {
+        setInputText(e.value[0]);
+      }
+    }
+    
+    function onSpeechError(e) {
+      console.error('Speech recognition error:', e);
+      setIsRecording(false);
+      Alert.alert("Voice Recognition Error", "Failed to recognize speech. Please try again.");
+    }
+    
+    Voice.onSpeechStart = onSpeechStart;
+    Voice.onSpeechEnd = onSpeechEnd;
+    Voice.onSpeechResults = onSpeechResults;
+    Voice.onSpeechError = onSpeechError;
+    
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  // ریکارڈنگ شروع کرنے کا فنکشن
+  const startRecording = async () => {
+    try {
+      await Voice.start('en-US');
+    } catch (e) {
+      console.error('Failed to start recording:', e);
+      Alert.alert("Error", "Failed to start voice recording. Please check app permissions.");
+    }
+  };
+  
+  // ریکارڈنگ روکنے کا فنکشن
+  const stopRecording = async () => {
+    try {
+      await Voice.stop();
+    } catch (e) {
+      console.error('Failed to stop recording:', e);
+    }
+  };
+
+  // پیغام کو پڑھنے کا فنکشن
+  const speakMessage = (text) => {
+    // پہلے سے جاری کوئی آواز ہو تو روک دیں
+    Speech.stop();
+    
+    setIsSpeaking(true);
+    
+    Speech.speak(text, {
+      language: 'en-US',
+      pitch: 1.0,
+      rate: 0.9,
+      onDone: () => setIsSpeaking(false),
+      onError: (error) => {
+        console.error('Speech error:', error);
+        setIsSpeaking(false);
+      }
+    });
+  };
 
   useEffect(() => {
     const welcomeMessage = {
@@ -47,6 +133,9 @@ export default function Chat() {
         parts: [{ text: welcomeMessage.text }],
       },
     ]);
+
+    // Auto speak the welcome message
+    speakMessage(welcomeMessage.text);
 
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
@@ -88,6 +177,14 @@ export default function Chat() {
     setChatHistory((prev) => [...prev, newHistoryItem]);
   };
 
+  // طبی موضوع ہے یا نہیں چیک کرنے کا فنکشن
+  const isMedicalRelated = (text) => {
+    text = text.toLowerCase();
+    
+    // کیا کوئی میڈیکل کی وارڈ ملتا ہے؟
+    return MEDICAL_TOPICS.some(topic => text.includes(topic.toLowerCase()));
+  };
+
   const sendMessage = async () => {
     if (inputText.trim() === "") return;
 
@@ -105,6 +202,30 @@ export default function Chat() {
     setInputText("");
     setIsLoading(true);
 
+    // If speech is happening, stop it
+    if (isSpeaking) {
+      Speech.stop();
+      setIsSpeaking(false);
+    }
+
+    // چیک کریں کہ سوال میڈیکل سے متعلق ہے یا نہیں
+    if (!isMedicalRelated(currentText)) {
+      const nonMedicalResponse = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm designed to help with medical emergencies and first aid questions only. Could you please ask me about a medical situation or first aid technique?",
+        isUser: false,
+        timestamp: new Date().toISOString(),
+      };
+      
+      setMessages((prevMessages) => [...prevMessages, nonMedicalResponse]);
+      addMessageToHistory(nonMedicalResponse.text, false);
+      setIsLoading(false);
+      
+      // اٹوماٹک جواب پڑھیں
+      speakMessage(nonMedicalResponse.text);
+      return;
+    }
+
     try {
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -113,7 +234,7 @@ export default function Chat() {
             {
               parts: [
                 {
-                  text: currentText,
+                  text: "You are a medical emergency assistant that only responds to medical questions and emergency situations. You must ignore any non-medical questions and refuse to respond to them. The user asked: " + currentText,
                 },
               ],
             },
@@ -143,6 +264,9 @@ export default function Chat() {
 
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
       addMessageToHistory(aiResponse, false);
+      
+      // اٹوماٹک جواب پڑھیں
+      speakMessage(aiResponse);
     } catch (error) {
       console.error("Gemini API Error:", error.response?.data || error);
 
@@ -178,9 +302,13 @@ export default function Chat() {
         {
           text: "Clear",
           onPress: () => {
+            // بولتی آواز بند کریں
+            Speech.stop();
+            setIsSpeaking(false);
+            
             const welcomeMessage = {
               id: "1",
-              text: "Chat has been cleared. How can I help you?",
+              text: "Chat has been cleared. What medical emergency can I help you with?",
               isUser: false,
               timestamp: new Date().toISOString(),
             };
@@ -192,6 +320,9 @@ export default function Chat() {
                 parts: [{ text: welcomeMessage.text }],
               },
             ]);
+            
+            // نیا پیغام پڑھیں
+            speakMessage(welcomeMessage.text);
           },
           style: "destructive",
         },
@@ -214,31 +345,57 @@ export default function Chat() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // AI کے پیغام پر دباؤ کا ہینڈلر
+  const handleAIMessagePress = (messageText) => {
+    if (isSpeaking) {
+      Speech.stop();
+      setIsSpeaking(false);
+    } else {
+      speakMessage(messageText);
+    }
+  };
+
   // ہر پیغام کے لیے ڈیزائن
   const renderMessage = ({ item }) => (
-    <View
-      style={[
-        styles.messageBubble,
-        item.isUser ? styles.userBubble : styles.aiBubble,
-      ]}
+    <TouchableOpacity
+      activeOpacity={item.isUser ? 1 : 0.7}
+      onPress={() => !item.isUser && handleAIMessagePress(item.text)}
     >
-      <Text
+      <View
         style={[
-          styles.messageText,
-          item.isUser ? styles.userText : styles.aiText,
+          styles.messageBubble,
+          item.isUser ? styles.userBubble : styles.aiBubble,
         ]}
       >
-        {item.text}
-      </Text>
-      <Text
-        style={[
-          styles.timeText,
-          item.isUser ? styles.userTimeText : styles.aiTimeText,
-        ]}
-      >
-        {formatTime(item.timestamp)}
-      </Text>
-    </View>
+        <Text
+          style={[
+            styles.messageText,
+            item.isUser ? styles.userText : styles.aiText,
+          ]}
+        >
+          {item.text}
+        </Text>
+        <View style={styles.messageFooter}>
+          {!item.isUser && (
+            // <Ionicons
+            //   name={isSpeaking ? "volume-high" : "volume-medium-outline"}
+            //   size={16}
+            //   color="rgba(0, 0, 0, 0.5)"
+            //   style={styles.speakerIcon}
+            // />
+            "hhhhhh"
+          )}
+          <Text
+            style={[
+              styles.timeText,
+              item.isUser ? styles.userTimeText : styles.aiTimeText,
+            ]}
+          >
+            {formatTime(item.timestamp)}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 
   // فلیٹ لسٹ کے لیے ہیڈر
@@ -296,11 +453,24 @@ export default function Chat() {
             style={styles.input}
             value={inputText}
             onChangeText={setInputText}
-            placeholder="Enter Message here ..."
+            placeholder="Enter medical question here..."
             placeholderTextColor="#888"
             multiline
             maxLength={1000}
           />
+          
+          <TouchableOpacity
+            onPress={isRecording ? stopRecording : startRecording}
+            style={styles.micButton}
+          >
+            {/* <Ionicons 
+              name={isRecording ? "mic" : "mic-outline"} 
+              size={24} 
+              color={isRecording ? "#f44336" : "#666"} 
+            /> */}
+            gggggg
+          </TouchableOpacity>
+          
           {isLoading ? (
             <ActivityIndicator
               size="small"
@@ -433,9 +603,17 @@ const styles = StyleSheet.create({
   aiText: {
     color: "#333",
   },
+  messageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
+  speakerIcon: {
+    marginRight: 5,
+  },
   timeText: {
     fontSize: 10,
-    marginTop: 4,
     alignSelf: "flex-end",
   },
   userTimeText: {
@@ -462,6 +640,13 @@ const styles = StyleSheet.create({
     minHeight: 40,
     color: "#333",
     textAlignVertical: "center",
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   sendButton: {
     marginLeft: 10,
