@@ -6,7 +6,10 @@ import { FormControl, FormControlLabel, FormControlLabelText } from '@/component
 import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input'
 import { EyeIcon, EyeOffIcon } from '@/components/ui/icon'
 import { Button, ButtonText } from "@/components/ui/button"
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/components/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
   const [showPassword, setShowPassword] = React.useState(false)
@@ -16,6 +19,30 @@ export default function Login() {
   const handleState = () => {
     setShowPassword((showState) => !showState)
   }
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert('Please enter email and password');
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log(user, 'User logged in successfully!');
+
+      // Save email to AsyncStorage
+      await AsyncStorage.setItem('userEmail', email);
+
+      // Navigate to Home or Dashboard
+      router.replace('/'); // apni route ke hisaab se adjust karo
+
+    } catch (error:any) {
+      console.log('Login Error: ', error.message);
+      alert(error.message);
+    }
+  };
 
   return (
     <Grid
@@ -86,7 +113,7 @@ export default function Login() {
               
             }}
           >
-          <Button size="lg" variant="solid" style={{ backgroundColor: "#fe2238", }} onPress={() => console.log('Login')}>
+          <Button size="lg" variant="solid" style={{ backgroundColor: "#fe2238", }} onPress={handleLogin}>
             <ButtonText>Login</ButtonText>
           </Button>
           </View>

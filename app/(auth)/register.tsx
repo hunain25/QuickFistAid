@@ -6,9 +6,16 @@ import { FormControl, FormControlLabel, FormControlLabelText } from '@/component
 import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input'
 import { EyeIcon, EyeOffIcon } from '@/components/ui/icon'
 import { Button, ButtonText } from "@/components/ui/button"
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router';
+import { auth, db } from '@/components/firebase.js';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { collection, doc, setDoc } from 'firebase/firestore'
+import { Spinner } from '@/components/ui/spinner'
 
 export default function Register() {
+  const router = useRouter();
+  const [isLoading, setIsLoading ] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   const [firstName, setFirstName] = React.useState('')
   const [lastName, setLastName] = React.useState('')
@@ -19,6 +26,48 @@ export default function Register() {
 
   const handleState = () => {
     setShowPassword((showState) => !showState)
+  }
+
+  const handleRegister = async () => {
+    try {
+      if (!email || !password || !firstName || !lastName) {
+        alert('Please fill all required fields');
+        return;
+      }
+  
+      if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+  
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        email: user.email,
+        firstName: firstName || 'No first name',
+        lastName: lastName || 'No last name',
+        phoneNumber: phoneNumber || 'No Phone Number',
+        createdAt: new Date().toISOString()
+      });
+  
+      console.log('User saved to Firestore');
+      await AsyncStorage.setItem('userEmail', email);
+  
+      router.replace('/');
+    } catch (error: any) {
+      console.log('Registration Error: ', error.message);
+      alert(error.message);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Spinner size="large" color={'#fe2238'} />
+      </View>
+    )
   }
 
   return (
@@ -124,7 +173,7 @@ export default function Register() {
               marginTop: 10,
             }}
           >
-            <Button size="lg" variant="solid" style={{ backgroundColor: '#fe2238' }} onPress={() => console.log('Register')}>
+            <Button size="lg" variant="solid" style={{ backgroundColor: '#fe2238' }} onPress={handleRegister}>
               <ButtonText>Register</ButtonText>
             </Button>
           </View>
