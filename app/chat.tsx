@@ -22,14 +22,23 @@ import { Avatar } from "@/components/ui/avatar";
 import { ArrowLeftIcon, Icon } from "@/components/ui/icon";
 import { Link } from "expo-router";
 
-const GEMINI_API_KEY = "AIzaSyCyq5_2H4g92yvOjFDhbyOsk9asqJKsjNE";
+const GEMINI_API_KEY = "AIzaSyBokdfwogdnDKMri0ATSlkD7hybQvgQWM4";
 
 export default function Chat() {
-  const [messages, setMessages] = useState<{ id: string; text: string; isUser: boolean; timestamp: string }[]>([]);
+  const [messages, setMessages] = useState<
+    { id: string; text: string; isUser: boolean; timestamp: string }[]
+  >([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState<{ role: string; parts: { text: string }[] }[]>([]);
-  const flatListRef = useRef<FlatList<{ id: string; text: string; isUser: boolean; timestamp: string }> | null>(null);
+  const [chatHistory, setChatHistory] = useState<
+    { role: string; parts: { text: string }[] }[]
+  >([]);
+  const flatListRef = useRef<FlatList<{
+    id: string;
+    text: string;
+    isUser: boolean;
+    timestamp: string;
+  }> | null>(null);
 
   const keyboardHeight = useRef(new Animated.Value(0)).current;
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -115,6 +124,13 @@ export default function Chat() {
             {
               parts: [
                 {
+                  text:
+                    "You are a Medical Emergency Assistant AI. " +
+                    "Only answer medical emergency or first-aid related questions. " +
+                    "If the user asks anything unrelated (like personal, jokes, history, coding, general knowledge), then reply: " +
+                    "'Sorry, I can only help with medical emergency or first-aid related situations.'",
+                },
+                {
                   text: currentText,
                 },
               ],
@@ -147,7 +163,10 @@ export default function Chat() {
       addMessageToHistory(aiResponse, false);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error("Gemini API Error:", error.response?.data || error.message);
+        console.error(
+          "Gemini API Error:",
+          error.response?.data || error.message
+        );
       } else {
         console.error("Unexpected Error:", error);
       }
@@ -220,7 +239,11 @@ export default function Chat() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const renderMessage = ({ item }: { item: { id: string; text: string; isUser: boolean; timestamp: string } }) => (
+  const renderMessage = ({
+    item,
+  }: {
+    item: { id: string; text: string; isUser: boolean; timestamp: string };
+  }) => (
     <View
       style={[
         styles.messageBubble,
